@@ -66,6 +66,7 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -80,8 +81,9 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
           ),
         ],
       ),
-      child: IntrinsicWidth(
-        child: IntrinsicHeight(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: bottomPadding * 0.1),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +95,7 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
               ),
               const SizedBox(height: 25),
               CustomRow(icon: Icons.location_on_outlined, label: 'Destination'),
-              const SizedBox(height: 4),
+              const SizedBox(height: 15),
               CustomTextField(
                 controller: _destinationController,
                 labelText: 'Enter Your Destination',
@@ -147,10 +149,12 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
               ),
               const SizedBox(height: 20),
               CustomButton(
-                buttonName: 'Cancel',
+                buttonName: 'Save Trip',
                 onPressed: () {
                   if(_destinationController.text.isEmpty || _dateController.text.isEmpty || _timeController.text.isEmpty){
-                    mySnkmsg('All fields are required!', context, isError: true);
+                    if(mounted){
+                      mySnkmsg('All fields are required!', context, isError: true);
+                    }
                   }
                   Navigator.pop(context);
                 },
