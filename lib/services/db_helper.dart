@@ -76,9 +76,35 @@ class TripDb {
     var db = await instance.database;
     return await db.delete('trips', where: 'id = ?', whereArgs: [id]);
   }
+
   //close db
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  //find trip by tripId
+  Future<TripModel?> fetchTripById(int id) async {
+    var db = await instance.database;
+    List<Map<String, dynamic>> maps = await db.query(
+      'trips',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return TripModel.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  //full trip Update Logic
+  Future<int> updateFullTrip(TripModel trip) async {
+    var db = await instance.database;
+    return db.update(
+      'trips',
+      trip.toMap(),
+      where: 'id = ?',
+      whereArgs: [trip.id],
+    );
   }
 }

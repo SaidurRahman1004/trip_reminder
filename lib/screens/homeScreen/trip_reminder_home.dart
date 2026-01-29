@@ -16,16 +16,35 @@ class TripReminderHome extends StatefulWidget {
 }
 
 class _TripReminderHomeState extends State<TripReminderHome> {
-  void _refreshTrips() {
-    setState(() {});
+  //store all data from database
+  late Future<List<TripModel>> _tripList;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrips();
+  }
+
+  void _loadTrips() {
+    setState(() {
+      //fetch all trips from database
+
+      _tripList = TripDb.instance.fetchAllTrips();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("TripReminder"), centerTitle: true),
+      appBar: AppBar(
+        title: Text("TripReminder"),
+        centerTitle: true,
+        actions: [
+          IconButton(onPressed: _loadTrips, icon: const Icon(Icons.refresh)),
+        ],
+      ),
       body: FutureBuilder<List<TripModel>>(
-        future: TripDb.instance.fetchAllTrips(),
+        future: _tripList,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -43,7 +62,7 @@ class _TripReminderHomeState extends State<TripReminderHome> {
           final trips = snapshot.data!;
           return ListView.builder(
             itemCount: trips.length,
-            padding: const EdgeInsets.only(bottom: 80),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             itemBuilder: (context, index) {
               final trip = trips[index];
               return TripCard(
@@ -60,15 +79,25 @@ class _TripReminderHomeState extends State<TripReminderHome> {
                     await NotificationService.cancelAlarmNotification(trip.id!);
                     mySnkmsg('Alarm Turned off', context);
                   }
-                  _refreshTrips();
+                  _loadTrips();
                 },
                 onDelete: () async {
                   await NotificationService.cancelAlarmNotification(trip.id!);
                   await TripDb.instance.deleteTrip(trip.id!);
                   mySnkmsg("Trip Deleted", context, isError: true);
-                  _refreshTrips();
+                  _loadTrips();
                 },
-                onEdit: () {},
+                onEdit: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: NewTripAddScreen(trip: trip),
+                    ),
+                  );
+                  _loadTrips();
+                },
               );
             },
           );
@@ -84,7 +113,7 @@ class _TripReminderHomeState extends State<TripReminderHome> {
               child: NewTripAddScreen(),
             ),
           );
-          _refreshTrips();
+          _loadTrips();
         },
         child: Icon(Icons.add),
         backgroundColor: Colors.amberAccent,

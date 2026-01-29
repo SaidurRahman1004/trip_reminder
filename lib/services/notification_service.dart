@@ -1,6 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:trip_reminder/services/db_helper.dart';
+
+import '../main.dart';
+import '../screens/details/trip_details_screen.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -24,8 +29,22 @@ class NotificationService {
 
     await _notificationsPlugin.initialize(
       settings: initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
+      onDidReceiveNotificationResponse: (details) async{
         //Tap Notification
+        if (details.payload != null) {
+          // Parse the payload as an integer
+          int tripId = int.parse(details.payload!);
+          // Navigate to the trip details screen with the trip ID
+          final trip = await TripDb.instance.fetchTripById(tripId);
+          if(trip != null){
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => TripDetailsScreen(trip: trip)),
+            );
+          }
+
+
+        }
+
       },
     );
 

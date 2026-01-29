@@ -10,7 +10,8 @@ import '../../widgets/custom_text_field.dart';
 import 'package:intl/intl.dart';
 
 class NewTripAddScreen extends StatefulWidget {
-  const NewTripAddScreen({super.key});
+  final TripModel? trip; //For edit trip
+  const NewTripAddScreen({super.key, this.trip});
 
   @override
   State<NewTripAddScreen> createState() => _NewTripAddScreenState();
@@ -23,6 +24,18 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    //if edit mode feild fill with data
+    if (widget.trip != null) {
+      _destinationController.text = widget.trip!.destination;
+      _dateController.text = widget.trip!.date;
+      _timeController.text = widget.trip!.time;
+      _selectedDate = DateFormat('MM/dd/yyyy').parse(widget.trip!.date);
+    }
+  }
 
   //date select Methode
   Future<void> _selectDate(BuildContext context) async {
@@ -77,32 +90,43 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
     }
     //Database obj Create
     TripModel newtrip = TripModel(
+      //if edit mode id will be same else null
+      id: widget.trip?.id,
       destination: _destinationController.text.trim(),
       date: _dateController.text,
       time: _timeController.text,
       isActive: 1,
     );
     //and obj to database and get id
-    int tripId = await TripDb.instance.addTrip(newtrip);
+    int tripId;
+    if (widget.trip == null) {
+      tripId = await TripDb.instance.addTrip(newtrip);
+    } else {
+      await TripDb.instance.updateFullTrip(newtrip);
+      tripId = widget.trip!.id!;
+      //cancle previous alarm and set new one
+      await NotificationService.cancelAlarmNotification(tripId);
+    }
 
     //Sedule Notification Alerm //Combine Date Time
     final alarmDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
+      _selectedTime?.hour ?? TimeOfDay.now().hour,
+      _selectedTime?.minute ?? TimeOfDay.now().minute,
     );
 
     await NotificationService.scheduleAlarmNotification(
       id: tripId,
-      title: 'Trip Reminder!',
+      title: 'Trip Updated!',
       body:
           'Your trip to ${newtrip.destination} is scheduled for ${newtrip.date} at ${newtrip.time}',
       scheduledDate: alarmDateTime,
+      payload: tripId.toString(), //trip id
     );
     if (mounted) {
-      mySnkmsg('Trip Saved & Alarm Set!', context);
+      mySnkmsg(widget.trip == null ? 'Trip Saved!' : 'Trip Updated!', context);
       Navigator.pop(context);
     }
   }
