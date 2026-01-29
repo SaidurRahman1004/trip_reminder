@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:trip_reminder/models/trip_model.dart';
 import 'package:trip_reminder/widgets/custo_snk.dart';
 import 'package:trip_reminder/widgets/customRow.dart';
 import 'package:trip_reminder/widgets/custom_button.dart';
+import '../../services/db_helper.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/customText.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:intl/intl.dart';
@@ -61,6 +64,46 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
         _selectedTime = pickedTime;
         _timeController.text = pickedTime.format(context);
       });
+    }
+  }
+
+  //SaveTrip
+  void _saveTrip() async {
+    if (_destinationController.text.isEmpty ||
+        _dateController.text.isEmpty ||
+        _timeController.text.isEmpty) {
+      mySnkmsg('All fields are required!', context, isError: true);
+      return;
+    }
+    //Database obj Create
+    TripModel newtrip = TripModel(
+      destination: _destinationController.text.trim(),
+      date: _dateController.text,
+      time: _timeController.text,
+      isActive: 1,
+    );
+    //and obj to database and get id
+    int tripId = await TripDb.instance.addTrip(newtrip);
+
+    //Sedule Notification Alerm //Combine Date Time
+    final alarmDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    await NotificationService.scheduleAlarmNotification(
+      id: tripId,
+      title: 'Trip Reminder!',
+      body:
+          'Your trip to ${newtrip.destination} is scheduled for ${newtrip.date} at ${newtrip.time}',
+      scheduledDate: alarmDateTime,
+    );
+    if (mounted) {
+      mySnkmsg('Trip Saved & Alarm Set!', context);
+      Navigator.pop(context);
     }
   }
 
@@ -150,12 +193,7 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
               const SizedBox(height: 20),
               CustomButton(
                 buttonName: 'Save Trip',
-                onPressed: () {
-                  if(_destinationController.text.isEmpty || _dateController.text.isEmpty || _timeController.text.isEmpty){
-                    mySnkmsg('All fields are required!', context, isError: true);
-                  }
-                  Navigator.pop(context);
-                },
+                onPressed: _saveTrip,
                 color: Colors.lightBlueAccent,
                 icon: Icons.save,
               ),

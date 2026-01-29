@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:trip_reminder/screens/homeScreen/trip_reminder_home.dart';
+import 'package:trip_reminder/services/notification_service.dart';
 
-void main() {
+void main() async{
+  //add Notificion service
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.initNotificatin();
   runApp(const TripReminderApp());
 }
 
