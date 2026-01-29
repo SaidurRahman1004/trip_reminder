@@ -88,46 +88,57 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
       mySnkmsg('All fields are required!', context, isError: true);
       return;
     }
-    //Database obj Create
+
+    if (_selectedDate == null || _selectedTime == null) {
+      mySnkmsg('Please select valid date and time!', context, isError: true);
+      return;
+    }
+
+    final alarmDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    if (alarmDateTime.isBefore(DateTime.now())) {
+      mySnkmsg('Cannot set alarm for past time!', context, isError: true);
+      return;
+    }
+
     TripModel newtrip = TripModel(
-      //if edit mode id will be same else null
       id: widget.trip?.id,
       destination: _destinationController.text.trim(),
       date: _dateController.text,
       time: _timeController.text,
       isActive: 1,
     );
-    //and obj to database and get id
-    int tripId;
-    if (widget.trip == null) {
-      tripId = await TripDb.instance.addTrip(newtrip);
-    } else {
-      await TripDb.instance.updateFullTrip(newtrip);
-      tripId = widget.trip!.id!;
-      //cancle previous alarm and set new one
-      await NotificationService.cancelAlarmNotification(tripId);
-    }
 
-    //Sedule Notification Alerm //Combine Date Time
-    final alarmDateTime = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedTime?.hour ?? TimeOfDay.now().hour,
-      _selectedTime?.minute ?? TimeOfDay.now().minute,
-    );
+    try {
+      int tripId;
+      if (widget.trip == null) {
+        tripId = await TripDb.instance.addTrip(newtrip);
+      } else {
+        await TripDb.instance.updateFullTrip(newtrip);
+        tripId = widget.trip!.id!;
+        await NotificationService.cancelAlarmNotification(tripId);
+      }
 
-    await NotificationService.scheduleAlarmNotification(
-      id: tripId,
-      title: 'Trip Updated!',
-      body:
-          'Your trip to ${newtrip.destination} is scheduled for ${newtrip.date} at ${newtrip.time}',
-      scheduledDate: alarmDateTime,
-      payload: tripId.toString(), //trip id
-    );
-    if (mounted) {
-      mySnkmsg(widget.trip == null ? 'Trip Saved!' : 'Trip Updated!', context);
-      Navigator.pop(context);
+      await NotificationService.scheduleAlarmNotification(
+        id: tripId,
+        title: widget.trip == null ? 'New Journey!' : 'Journey Updated!',
+        body: 'Heading to ${newtrip.destination} at ${newtrip.time}',
+        scheduledDate: alarmDateTime,
+        payload: tripId.toString(),
+      );
+
+      if (mounted) {
+        mySnkmsg(widget.trip == null ? 'Trip Saved!' : 'Trip Updated!', context);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      mySnkmsg('Error: $e', context, isError: true);
     }
   }
 
