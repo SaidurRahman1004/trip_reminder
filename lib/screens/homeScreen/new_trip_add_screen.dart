@@ -152,9 +152,7 @@ class _NewTripAddScreenState extends State<NewTripAddScreen> {
                 buttonName: 'Save Trip',
                 onPressed: () {
                   if(_destinationController.text.isEmpty || _dateController.text.isEmpty || _timeController.text.isEmpty){
-                    if(mounted){
-                      mySnkmsg('All fields are required!', context, isError: true);
-                    }
+                    mySnkmsg('All fields are required!', context, isError: true);
                   }
                   Navigator.pop(context);
                 },
